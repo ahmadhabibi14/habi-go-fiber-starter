@@ -9,7 +9,7 @@ import (
 	"myapi/configs"
 
 	"myapi/internal/bootstrap/database"
-	"myapi/internal/repository/users"
+	repoclickhouse "myapi/internal/repository/users/repoClickhouse"
 
 	"myapi/internal/bootstrap/logger"
 
@@ -84,25 +84,17 @@ func (_a *App) setupHTTP() {
 }
 
 func (_a *App) setupServices() {
-	userRepo := users.NewUserImpl_ClickHouse(_a.db)
+	userRepo := repoclickhouse.NewUserImpl(_a.db)
 
 	_a.authService = service.NewAuthService(_a.db, &userRepo)
 	_a.userService = service.NewUserService(_a.db, &userRepo)
 }
 
 func (_a *App) setupDatabases() {
-	pq, err := configs.ConnectClickhouse()
+	db, err := database.NewDatabase()
 	if err != nil {
-		logger.Log.Panic().Str("error", err.Error()).Msg("failed to connect clickhouse")
+		logger.Log.Panic().Str("error", err.Error()).Msg("failed to initiate database")
 	}
-
-	rd := configs.NewRedisClient()
-	_, err = rd.Ping().Result()
-	if err != nil {
-		logger.Log.Panic().Str("error", err.Error()).Msg("failed to connect redis")
-	}
-
-	db := database.NewDatabase(pq, rd)
 	_a.db = db
 }
 
